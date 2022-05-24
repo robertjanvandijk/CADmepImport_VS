@@ -1,0 +1,956 @@
+USE [VinkSystemen_TEST]
+GO
+/****** Object:  StoredProcedure [dbo].[SIP_PRC_READCADMEP_3]    Script Date: 24-5-2022 14:07:37 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		KOMEXO PZ
+-- Create date: 31-08-2020
+-- Description:	Inlezen CADMep-txt-bestand nieuwe stijl
+-- =============================================
+ALTER PROCEDURE [dbo].[SIP_PRC_READCADMEP_3]
+	  @FileName NVarChar(255) = Null                 
+	, @IsahUserCode T_Code_User = Null
+	, @ProdHeaderDossierCode T_Code_ProdHeadDossier = Null 
+	, @ResultText NVarChar(255) = Null OutPut
+    , @MachGrpCode T_Code_MachGrp = NULL
+AS
+BEGIN
+
+SET NOCOUNT ON;
+DECLARE @EXITS INT
+DECLARE @SqlText NVarChar(max)
+DECLARE @FIELDTERMINATOR NChar(2)
+DECLARE	@ROWTERMINATOR NVarChar(30)
+DECLARE	@CodePage NVarChar(30)
+DECLARE @XMLFieldValues nvarchar(MAX)
+DECLARE @IsahTableId T_Code_TableId
+DECLARE @IsahPrimKey T_Gen_Exploratory
+DECLARE @old_LastUpdatedOn nvarchar(30)
+DECLARE @new_ProdBOMLineNr T_LineNr
+DECLARE @PBOM_LineNr T_LineNr
+DECLARE @new_ProdBOOLineNr T_LineNr
+DECLARE @PBOO_LineNr T_LineNr
+DECLARE @CurrDate T_MandDate
+DECLARE @RevisionNr T_Nr_Revision03
+DECLARE @Fiat int
+DECLARE	@PurQty [dbo].[T_Quantum_Qty12_3] 
+DECLARE	@InvtQty [dbo].[T_Quantum_Qty12_3] 
+DECLARE	@ProdQty [dbo].[T_Quantum_Qty12_3] 
+DECLARE @OrdCode T_Code_Ord 
+DECLARE @PurPriceOriginType T_Type_PurPriceOrigin = 0
+DECLARE @InvtPriceOriginType T_Type_InvtPriceOrigin = 0
+DECLARE @CustPriceOriginType T_Type_CustPriceOrigin = 0
+DECLARE @ProdPriceOriginType T_Type_ProdPriceOrigin = 0
+DECLARE @RequiredDate  [dbo].[T_MandDate]
+DECLARE @UnitCode T_Code_Unit
+DECLARE @Length [dbo].[T_Measure_Linear] 
+DECLARE	@Width [dbo].[T_Measure_Linear] 
+DECLARE	@Height [dbo].[T_Measure_Linear] 
+
+DECLARE @FieldDefCode00 T_Code_CustomField
+DECLARE @FieldDefCode01 T_Code_CustomField
+DECLARE @FieldDefCode02 T_Code_CustomField
+DECLARE @FieldDefCode03 T_Code_CustomField
+DECLARE @FieldDefCode04 T_Code_CustomField
+DECLARE @FieldDefCode05 T_Code_CustomField
+DECLARE @FieldDefCode06 T_Code_CustomField
+DECLARE @FieldDefCode07 T_Code_CustomField
+DECLARE @FieldDefCode08 T_Code_CustomField
+DECLARE @FieldDefCode09 T_Code_CustomField
+DECLARE @FieldDefCode10 T_Code_CustomField
+DECLARE @FieldDefCode11 T_Code_CustomField
+DECLARE @FieldDefCode12 T_Code_CustomField
+DECLARE @FieldDefCode13 T_Code_CustomField
+DECLARE @FieldDefCode14 T_Code_CustomField
+DECLARE @FieldDefCode15 T_Code_CustomField
+DECLARE @FieldDefCode16 T_Code_CustomField
+DECLARE @FieldDefCode17 T_Code_CustomField
+DECLARE @FieldDefCode18 T_Code_CustomField
+DECLARE @FieldDefCode19 T_Code_CustomField
+DECLARE @FieldDefCode20 T_Code_CustomField
+DECLARE @FieldDefCode21 T_Code_CustomField
+DECLARE @FieldDefCode22 T_Code_CustomField
+DECLARE @FieldDefCode23 T_Code_CustomField
+DECLARE @FieldDefCode24 T_Code_CustomField
+DECLARE @FieldDefCode25 T_Code_CustomField
+DECLARE @FieldDefCode26 T_Code_CustomField
+DECLARE @FieldDefCode27 T_Code_CustomField
+DECLARE @FieldDefCode28 T_Code_CustomField
+DECLARE @FieldDefCode29 T_Code_CustomField
+DECLARE @FieldDefCode30 T_Code_CustomField
+DECLARE @FieldDefCode31 T_Code_CustomField
+DECLARE @FieldDefCode32 T_Code_CustomField
+DECLARE @FieldDefCode33 T_Code_CustomField
+DECLARE @FieldDefCode34 T_Code_CustomField
+DECLARE @FieldDefCode35 T_Code_CustomField
+DECLARE @FieldDefCode36 T_Code_CustomField
+DECLARE @FieldDefCode37 T_Code_CustomField
+DECLARE @FieldDefCode38 T_Code_CustomField
+DECLARE @FieldDefCode39 T_Code_CustomField
+
+
+
+DECLARE @ID                         nvarchar(60)
+DECLARE @PartCode                   T_Code_Part
+DECLARE @ServiceNaam				nvarchar(100) 
+DECLARE @ServiceType 				nvarchar(100) 
+DECLARE @Hoofdgroep 				nvarchar(100)   
+DECLARE @Omschrijving 				nvarchar(100)   
+DECLARE @PosNr 						nvarchar(100)   
+DECLARE @Materiaal 					nvarchar(100)   
+DECLARE @Dikte 						nvarchar(100)   
+DECLARE @Aantal 					numeric(12,3)   
+DECLARE @S1 						nvarchar(100)   
+DECLARE @S2 						nvarchar(100)   
+DECLARE @S3 						nvarchar(100)   
+DECLARE @C1 						nvarchar(100)   
+DECLARE @C2 						nvarchar(100)   
+DECLARE @C3 						nvarchar(100)  
+DECLARE @C4 						nvarchar(100)   
+DECLARE @DimsA 						nvarchar(100)   
+DECLARE @DimsB 						nvarchar(100)   
+DECLARE @DimsC 						nvarchar(100)   
+DECLARE @DimsD 						nvarchar(100)   
+DECLARE @DimsE 						nvarchar(100)   
+DECLARE @DimsF 						nvarchar(100)   
+DECLARE @DimsG 						nvarchar(100)   
+DECLARE @DimsH 						nvarchar(100)   
+DECLARE @DimsI 						nvarchar(100)   
+DECLARE @DimsJ 						nvarchar(100)   
+DECLARE @DimsK 						nvarchar(100)   
+DECLARE @DimsL 						nvarchar(100)   
+DECLARE @DimsM 						nvarchar(100)   
+DECLARE @DimsN 						nvarchar(100)   
+DECLARE @DimsO 						nvarchar(100)   
+DECLARE @DimsP 						nvarchar(100)   
+DECLARE @DimsQ 						nvarchar(100)   
+DECLARE @DimsR 						nvarchar(100)   	
+DECLARE @LengteNetto 				nvarchar(100)   
+DECLARE @Gewicht 					numeric(12,3)
+DECLARE @Oppervlakte 				numeric(12,3)
+DECLARE @Isolatie 					nvarchar(100)   
+DECLARE @IsolatieMateriaalDikte 	nvarchar(100)   
+DECLARE @UitwendigeNabehandeling    nvarchar(100)   
+DECLARE @InwendigeNabehandeling 	nvarchar(100)   
+DECLARE @RAL	 					nvarchar(100)   
+DECLARE @RAL1	 					nvarchar(100)  
+DECLARE @Reinheidsklasse 			nvarchar(100)   
+DECLARE @Luchtdichtheidsklasse 		nvarchar(100)   
+DECLARE @ExtraInfo 					nvarchar(100) 
+
+declare @LengteNettoDEC numeric(12,3)
+DECLARE @c nvarchar(1) = N''
+
+DECLARE @Reason nvarchar(150)
+DECLARE @ReasonId int
+DECLARE @LineNrErr int
+DECLARE @PartCodeErrorExits int
+
+ SET @FIELDTERMINATOR = N'\t'   --TXT field delimiter
+ SET @ROWTERMINATOR   = N'\n'  --Use to shift the control to next row
+ SET @CodePage        = N'RAW'
+ SET @IsahTableId     = 4
+ 
+ SET @FieldDefCode00  = N'0094_S1'
+ SET @FieldDefCode01  = N'0094_S2'  
+ SET @FieldDefCode02  = N'0094_S3'  
+ SET @FieldDefCode03  = N'0094_C1'  
+ SET @FieldDefCode04  = N'0094_C2'  
+ SET @FieldDefCode05  = N'0094_C3'  
+ SET @FieldDefCode06  = N'0094_C4'  
+ SET @FieldDefCode07  = N'0094_DimsA'
+ SET @FieldDefCode08  = N'0094_DimsB'  
+ SET @FieldDefCode09  = N'0094_DimsC'  
+ SET @FieldDefCode10  = N'0094_DimsD'  
+ SET @FieldDefCode11  = N'0094_DimsE'  
+ SET @FieldDefCode12  = N'0094_DimsF'  
+ SET @FieldDefCode13  = N'0094_DimsG'  
+ SET @FieldDefCode14  = N'0094_DimsH'
+ SET @FieldDefCode15  = N'0094_DimsI'  
+ SET @FieldDefCode16  = N'0094_DimsJ'  
+ SET @FieldDefCode17  = N'0094_DimsK'  
+ SET @FieldDefCode18  = N'0094_DimsL'  
+ SET @FieldDefCode19  = N'0094_DimsM'   
+ SET @FieldDefCode20  = N'0094_DimsN'
+ SET @FieldDefCode21  = N'0094_DimsO'  
+ SET @FieldDefCode22  = N'0094_DimsP'  
+ SET @FieldDefCode23  = N'0094_DimsQ'  
+ SET @FieldDefCode24  = N'0094_DimsR'  
+ SET @FieldDefCode25  = N'0094_LNet'  
+ SET @FieldDefCode26  = N'0094_ISO'  
+ SET @FieldDefCode27  = N'0094_ISOMD'
+ SET @FieldDefCode28  = N'0094_UNB'  
+ SET @FieldDefCode29  = N'0094_INB'  
+ SET @FieldDefCode30  = N'0094_RAL' 
+ SET @FieldDefCode31  = N'0094_RAL1' 
+ SET @FieldDefCode32  = N'0094_ZW'  
+ SET @FieldDefCode33  = N'0094_RK'  
+ SET @FieldDefCode34  = N'0094_LDK'  
+ SET @FieldDefCode35  = N'0094_EXTRAINF'  
+ SET @FieldDefCode36  = N'0094_KG' 
+ SET @FieldDefCode37  = N'0094_OPP' 
+ 
+ CREATE TABLE #CADMEPFILE
+(
+[GUID]						nvarchar(100)  null, 
+[ServiceNaam]				nvarchar(100)  null,
+[ServiceType]				nvarchar(100)  null,
+[Hoofdgroep]				nvarchar(100)  null,
+[Omschrijving]				nvarchar(100)  null,
+[PosNr]						nvarchar(100)  null,
+[Materiaal]					nvarchar(100)  null,
+[Dikte]						nvarchar(100)  null,
+[Aantal]					nvarchar(100)  null,
+[S1]						nvarchar(100)  null,
+[S2]						nvarchar(100)  null,
+[S3]						nvarchar(100)  null,
+[C1]						nvarchar(100)  null,
+[C2]						nvarchar(100)  null,
+[C3]						nvarchar(100)  null,
+[C4]						nvarchar(100)  null,
+[DimsA]						nvarchar(100)  null,
+[DimsB]						nvarchar(100)  null,
+[DimsC]						nvarchar(100)  null,
+[DimsD]						nvarchar(100)  null,
+[DimsE]						nvarchar(100)  null,
+[DimsF]						nvarchar(100)  null,
+[DimsG]						nvarchar(100)  null,
+[DimsH]						nvarchar(100)  null,
+[DimsI]						nvarchar(100)  null,
+[DimsJ]						nvarchar(100)  null,
+[DimsK]						nvarchar(100)  null,
+[DimsL]						nvarchar(100)  null,
+[DimsM]						nvarchar(100)  null,
+[DimsN]						nvarchar(100)  null,
+[DimsO]						nvarchar(100)  null,
+[DimsP]						nvarchar(100)  null,
+[DimsQ]						nvarchar(100)  null,
+[DimsR]						nvarchar(100)  null,	
+[LengteNetto]				nvarchar(100)  null,
+[Gewicht]					nvarchar(100)  null,
+[Oppervlakte]				nvarchar(100)  null,
+[Isolatie]					nvarchar(100)  null,
+[IsolatieMateriaalDikte]	nvarchar(100)  null,
+[UitwendigeNabehandeling]	nvarchar(100)  null,
+[InwendigeNabehandeling]	nvarchar(100)  null,
+[RAL]    					nvarchar(100)  null,
+[RAL1]	     				nvarchar(100)  null,
+[Reinheidsklasse]			nvarchar(100)  null,
+[Luchtdichtheidsklasse]		nvarchar(100)  null,
+[ExtraInfo]					nvarchar(100)  null
+)
+
+CREATE TABLE #CADMEPERROR
+(
+[GUID]	       nvarchar(100) null,
+[PartCode]     nvarchar(100) null,
+[Omschrijving] nvarchar(100) null,
+[PartPos] nvarchar(100) null
+)
+
+BEGIN TRY  
+
+	SELECT @SqlText = 
+	N'BULK INSERT #CADMEPFILE 
+	FROM ''' + @FileName + N'''  
+	WITH
+	(
+	 FIRSTROW = 2
+	,FIELDTERMINATOR = ''' + @FIELDTERMINATOR + N'''  
+	,ROWTERMINATOR = ''' + @ROWTERMINATOR + N'''   
+	,TABLOCK
+	,CODEPAGE = ''' + @CodePage + N'''
+	,KEEPNULLS 
+	)'
+
+    EXECUTE (@SqlText)    
+
+END TRY  
+BEGIN CATCH  
+    SELECT 
+	     ERROR_MESSAGE() AS ErrorMessage
+	    ,ERROR_NUMBER() AS ErrorNumber  
+        ,ERROR_SEVERITY() AS ErrorSeverity  
+        ,ERROR_STATE() AS ErrorState  
+        ,ERROR_PROCEDURE() AS ErrorProcedure  
+        ,ERROR_LINE() AS ErrorLine;
+          
+END CATCH;  
+
+
+create table #dimensions (
+						   GUID      nvarchar(100) NULL,
+						   Dimensie1 nvarchar(100) NULL,
+						   Dimensie2 nvarchar(100) NULL,
+						   Dimensie3 nvarchar(100) NULL,
+						   Dimensie4 nvarchar(100) NULL
+						 )
+
+insert into #dimensions
+select
+ CMF.GUID
+,(select SplitData FROM [dbo].[SIF_SplitString] ((case when (len(replace(CMF.Omschrijving,' ','')) - len(replace(SPGM.Description,' ','')) - 1)>= 0 then 
+      right(CMF.Omschrijving, (len(replace(CMF.Omschrijving,' ','')) - len(replace(SPGM.Description,' ','')) - 1)) end),'/') where LineNr = 1)
+,(select SplitData FROM [dbo].[SIF_SplitString] ((case when (len(replace(CMF.Omschrijving,' ','')) - len(replace(SPGM.Description,' ','')) - 1)>= 0 then 
+      right(CMF.Omschrijving, (len(replace(CMF.Omschrijving,' ','')) - len(replace(SPGM.Description,' ','')) - 1)) end),'/') where LineNr = 2)
+,(select SplitData FROM [dbo].[SIF_SplitString] ((case when (len(replace(CMF.Omschrijving,' ','')) - len(replace(SPGM.Description,' ','')) - 1)>= 0 then 
+      right(CMF.Omschrijving, (len(replace(CMF.Omschrijving,' ','')) - len(replace(SPGM.Description,' ','')) - 1)) end),'/') where LineNr = 3)
+,(select SplitData FROM [dbo].[SIF_SplitString] ((case when (len(replace(CMF.Omschrijving,' ','')) - len(replace(SPGM.Description,' ','')) - 1)>= 0 then 
+      right(CMF.Omschrijving, (len(replace(CMF.Omschrijving,' ','')) - len(replace(SPGM.Description,' ','')) - 1)) end),'/') where LineNr = 4)
+FROM #CADMEPFILE as CMF
+inner join dbo.T_SalesPartGrpMain As SPGM ON SPGM.SalesPartGrpMainCode = right('000'+CMF.Hoofdgroep,3) 
+
+-------------------------------------------------------------------------------------------------------------------------------------
+----Insert ProdBillOfOper 
+-------------------------------------------------------------------------------------------------------------------------------------
+   SET @new_ProdBOOLineNr = Null
+   SET @PBOO_LineNr = (ISNULL((SELECT MAX(LineNr) FROM dbo.T_ProdBillOfOper WHERE ProdHeaderDossierCode = @ProdHeaderDossierCode), 0)) + 10
+          
+		EXECUTE IP_Ins_ProdBOO                                                          
+          @ProdHeaderDossierCode = @ProdHeaderDossierCode 
+        , @ProdBOOStatusCode     = N'10'   
+        , @MachGrpCode           = @MachGrpCode 
+        , @LineNr                = @PBOO_LineNr  
+        , @Qty                   = 1
+        , @StandCapacityType     = 1
+        , @IsahUserCode          = @IsahUserCode 
+	    , @new_ProdBOOLineNr     = @new_ProdBOOLineNr Output
+
+
+DECLARE Crs_TableRow CURSOR LOCAL FORWARD_ONLY DYNAMIC FOR
+--PartCode op basis ongelijk aan DUMMY
+SELECT
+
+ UPPER (
+		rtrim(ltrim(LEFT(
+		convert(nvarchar(25),FORMAT(convert(int,LEFT(CMF.[Hoofdgroep],3)),'x')) + MAT.IDString  +
+		case when ISNUMERIC(D1.Dimensie1) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie1,'.',''),0)),'x') + @c else N'' end + 
+		case when ISNUMERIC(D1.Dimensie2) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie2,'.',''),0)),'x') + @c else N'' end + 
+		case when ISNUMERIC(D1.Dimensie3) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie3,'.',''),0)),'x') + @c else N'' end + 
+        case when ISNUMERIC(D1.Dimensie4) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie4,'.',''),0)),'x') + @c else N'' end +	
+		REPLICATE ( '0' ,15 ),15))))
+
+,max(isnull(CMF.[ServiceNaam],N''))	 
+,max(isnull(CMF.[ServiceType],N''))
+,max(isnull(CMF.[Hoofdgroep],N''))
+,max(isnull(CMF.[Omschrijving],N'')) 
+--,max(isnull(CMF.[PosNr],N'')) 
+,(case when SPGM.SalesPartGrpMainCode in (N'001',N'002',N'003',N'004',N'005',N'006',N'007',N'008',N'009',N'010',N'011',N'012',N'013',N'014',N'015',N'016',N'017',N'018',N'019',N'020',N'021',N'022',N'023',N'024',N'025',N'026',N'027',N'028',N'029',N'030',N'031') then CMF.[PosNr] else N'' end )
+,max(isnull(CMF.[Materiaal],N''))		 
+,max(isnull(CMF.[Dikte],N''))
+,sum(convert(numeric(12,3),cmf.Aantal))
+,max(ISNULL(CMF.[S1],N'') )			 
+,max(ISNULL(CMF.[S2],N'') )				 
+,max(ISNULL(CMF.[S3],N''))				 
+,max(ISNULL(CMF.[C1],N'') )				 
+,max(ISNULL(CMF.[C2],N'')) 				 
+,max(ISNULL(CMF.[C3],N'') )				 
+,max(ISNULL(CMF.[C4],N'') )				 
+,max(ISNULL(CMF.[DimsA],N'') )		 
+,max(ISNULL(CMF.[DimsB],N'') )			 
+,max(ISNULL(CMF.[DimsC],N'') )			 
+,max(ISNULL(CMF.[DimsD],N'') )			 
+,max(ISNULL(CMF.[DimsE],N'') )			 
+,max(ISNULL(CMF.[DimsF],N'') )			 
+,max(ISNULL(CMF.[DimsG],N'')) 			 
+,max(ISNULL(CMF.[DimsH],N'') )			 
+,max(ISNULL(CMF.[DimsI],N'') )			 
+,max(ISNULL(CMF.[DimsJ],N'') )		 
+,max(ISNULL(CMF.[DimsK],N'') )			 
+,max(ISNULL(CMF.[DimsL],N'') )			 
+,max(ISNULL(CMF.[DimsM],N'') )			 
+,max(ISNULL(CMF.[DimsN],N'') )			 
+,max(ISNULL(CMF.[DimsO],N'') )			 
+,max(ISNULL(CMF.[DimsP],N'') )			 
+,max(ISNULL(CMF.[DimsQ],N'') )			 
+,max(ISNULL(CMF.[DimsR],N'') )			 	
+,max(ISNULL(CMF.[LengteNetto],N'') 	)	 
+,max(convert(numeric(12,3),replace(CMF.[Gewicht],N',',N'.'))) 
+,max(convert(numeric(12,3),replace(CMF.[Oppervlakte],N',',N'.'))) 
+,max(isnull(CMF.[Isolatie],N''))	 
+,max(ISNULL(CMF.[IsolatieMateriaalDikte],N''))		 
+,max(ISNULL(CMF.[UitwendigeNabehandeling],N'') )			 
+,max(ISNULL(CMF.[InwendigeNabehandeling],N'') )			 	 
+,max(ISNULL(CMF.[RAL],N'') 	)	
+,max(ISNULL(CMF.[RAL1],N'') 	)					 
+,max(ISNULL(CMF.[Reinheidsklasse],N'') 		)			 
+,max(ISNULL(CMF.[Luchtdichtheidsklasse],N'') )				 
+,max(ISNULL(CMF.[ExtraInfo],N'') )	
+,max(isnull(P.UnitCode,N''))
+FROM #CADMEPFILE as CMF
+inner join dbo.T_SalesPartGrpMain As SPGM ON SPGM.SalesPartGrpMainCode = right('000'+CMF.Hoofdgroep,3) 
+inner join #dimensions As D1 On D1.GUID = CMF.GUID
+left outer join dbo.ST_CPC_Material as MAT ON rtrim(MAT.Grades) = rtrim(CMF.Materiaal)
+inner join dbo.T_Part As P ON P.PartCode =  UPPER (
+				 rtrim(ltrim(LEFT(
+				 convert(nvarchar(25),FORMAT(convert(int,LEFT(CMF.[Hoofdgroep],3)),'x')) + MAT.IDString +
+				 case when ISNUMERIC(D1.Dimensie1) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie1,'.',''),0)),'x') + @c else N'' end + 
+				 case when ISNUMERIC(D1.Dimensie2) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie2,'.',''),0)),'x') + @c else N'' end + 
+				 case when ISNUMERIC(D1.Dimensie3) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie3,'.',''),0)),'x') + @c else N'' end + 
+                 case when ISNUMERIC(D1.Dimensie4) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie4,'.',''),0)),'x') + @c else N'' end +
+				 REPLICATE ( '0' ,15 ),15))))
+
+group by UPPER (
+				 rtrim(ltrim(LEFT(
+				 convert(nvarchar(25),FORMAT(convert(int,LEFT(CMF.[Hoofdgroep],3)),'x')) + MAT.IDString +
+				 case when ISNUMERIC(D1.Dimensie1) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie1,'.',''),0)),'x') + @c else N'' end + 
+				 case when ISNUMERIC(D1.Dimensie2) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie2,'.',''),0)),'x') + @c else N'' end + 
+				 case when ISNUMERIC(D1.Dimensie3) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie3,'.',''),0)),'x') + @c else N'' end + 
+                 case when ISNUMERIC(D1.Dimensie4) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie4,'.',''),0)),'x') + @c else N'' end +
+				 REPLICATE ( '0' ,15 ),15)))), (case when SPGM.SalesPartGrpMainCode in (N'001',N'002',N'003',N'004',N'005',N'006',N'007',N'008',N'009',N'010',N'011',N'012',N'013',N'014',N'015',N'016',N'017',N'018',N'019',N'020',N'021',N'022',N'023',N'024',N'025',N'026',N'027',N'028',N'029',N'030',N'031') then CMF.[PosNr] else N'' end)
+
+
+
+UNION ALL
+--PartCode op basis gelijk aan DUMMY
+SELECT
+
+ UPPER (
+		rtrim(ltrim(LEFT(
+		convert(nvarchar(25),FORMAT(convert(int,LEFT(CMF.[Hoofdgroep],3)),'x')) + MAT.IDString  +
+		case when ISNUMERIC(D1.Dimensie1) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie1,'.',''),0)),'x') + @c else N'' end + 
+		case when ISNUMERIC(D1.Dimensie2) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie2,'.',''),0)),'x') + @c else N'' end + 
+		case when ISNUMERIC(D1.Dimensie3) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie3,'.',''),0)),'x') + @c else N'' end + 
+        case when ISNUMERIC(D1.Dimensie4) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie4,'.',''),0)),'x') + @c else N'' end +	
+		REPLICATE ( 'X' ,15 ),15))))
+
+,max(isnull(CMF.[ServiceNaam],N''))	 
+,max(isnull(CMF.[ServiceType],N''))
+,max(isnull(CMF.[Hoofdgroep],N''))
+,max(isnull(CMF.[Omschrijving],N'')) 
+--,max(isnull(CMF.[PosNr],N''))	 
+-- 20220518 RJvD - SalesPartGrpMainCode uitgebreid van 30 + 31 naar alles t/m 31
+,(case when SPGM.SalesPartGrpMainCode in (N'001',N'002',N'003',N'004',N'005',N'006',N'007',N'008',N'009',N'010',N'011',N'012',N'013',N'014',N'015',N'016',N'017',N'018',N'019',N'020',N'021',N'022',N'023',N'024',N'025',N'026',N'027',N'028',N'029',N'030',N'031') then CMF.[PosNr] else N'' end )
+,max(isnull(CMF.[Materiaal],N''))		 
+,max(isnull(CMF.[Dikte],N''))
+,sum(convert(numeric(12,3),cmf.Aantal))
+,max(ISNULL(CMF.[S1],N'') )			 
+,max(ISNULL(CMF.[S2],N'') )				 
+,max(ISNULL(CMF.[S3],N''))				 
+,max(ISNULL(CMF.[C1],N'') )				 
+,max(ISNULL(CMF.[C2],N'')) 				 
+,max(ISNULL(CMF.[C3],N'') )				 
+,max(ISNULL(CMF.[C4],N'') )				 
+,max(ISNULL(CMF.[DimsA],N'') )		 
+,max(ISNULL(CMF.[DimsB],N'') )			 
+,max(ISNULL(CMF.[DimsC],N'') )			 
+,max(ISNULL(CMF.[DimsD],N'') )			 
+,max(ISNULL(CMF.[DimsE],N'') )			 
+,max(ISNULL(CMF.[DimsF],N'') )			 
+,max(ISNULL(CMF.[DimsG],N'')) 			 
+,max(ISNULL(CMF.[DimsH],N'') )			 
+,max(ISNULL(CMF.[DimsI],N'') )			 
+,max(ISNULL(CMF.[DimsJ],N'') )		 
+,max(ISNULL(CMF.[DimsK],N'') )			 
+,max(ISNULL(CMF.[DimsL],N'') )			 
+,max(ISNULL(CMF.[DimsM],N'') )			 
+,max(ISNULL(CMF.[DimsN],N'') )			 
+,max(ISNULL(CMF.[DimsO],N'') )			 
+,max(ISNULL(CMF.[DimsP],N'') )			 
+,max(ISNULL(CMF.[DimsQ],N'') )			 
+,max(ISNULL(CMF.[DimsR],N'') )			 	
+,max(ISNULL(CMF.[LengteNetto],N'') 	)	 
+,max(convert(numeric(12,3),replace(CMF.[Gewicht],N',',N'.'))) 
+,max(convert(numeric(12,3),replace(CMF.[Oppervlakte],N',',N'.')))  
+,max(isnull(CMF.[Isolatie],N''))	 
+,max(ISNULL(CMF.[IsolatieMateriaalDikte],N''))		 
+,max(ISNULL(CMF.[UitwendigeNabehandeling],N'') )			 
+,max(ISNULL(CMF.[InwendigeNabehandeling],N'') )			 	 
+,max(ISNULL(CMF.[RAL],N'') 	)	
+,max(ISNULL(CMF.[RAL1],N'') 	)					 
+,max(ISNULL(CMF.[Reinheidsklasse],N'') 		)			 
+,max(ISNULL(CMF.[Luchtdichtheidsklasse],N'') )				 
+,max(ISNULL(CMF.[ExtraInfo],N'') )	
+,max(isnull(P.UnitCode,N''))
+FROM #CADMEPFILE as CMF
+inner join dbo.T_SalesPartGrpMain As SPGM ON SPGM.SalesPartGrpMainCode = right('000'+CMF.Hoofdgroep,3) 
+inner join #dimensions As D1 On D1.GUID = CMF.GUID
+left outer join dbo.ST_CPC_Material as MAT ON rtrim(MAT.Grades) = rtrim(CMF.Materiaal)
+inner join dbo.T_Part As P ON P.PartCode =  UPPER (
+				 rtrim(ltrim(LEFT(
+				 convert(nvarchar(25),FORMAT(convert(int,LEFT(CMF.[Hoofdgroep],3)),'x')) + MAT.IDString +
+				 case when ISNUMERIC(D1.Dimensie1) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie1,'.',''),0)),'x') + @c else N'' end + 
+				 case when ISNUMERIC(D1.Dimensie2) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie2,'.',''),0)),'x') + @c else N'' end + 
+				 case when ISNUMERIC(D1.Dimensie3) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie3,'.',''),0)),'x') + @c else N'' end + 
+                 case when ISNUMERIC(D1.Dimensie4) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie4,'.',''),0)),'x') + @c else N'' end +
+				 REPLICATE ( 'X' ,15 ),15))))
+
+group by UPPER (
+				 rtrim(ltrim(LEFT(
+				 convert(nvarchar(25),FORMAT(convert(int,LEFT(CMF.[Hoofdgroep],3)),'x')) + MAT.IDString +
+				 case when ISNUMERIC(D1.Dimensie1) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie1,'.',''),0)),'x') + @c else N'' end + 
+				 case when ISNUMERIC(D1.Dimensie2) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie2,'.',''),0)),'x') + @c else N'' end + 
+				 case when ISNUMERIC(D1.Dimensie3) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie3,'.',''),0)),'x') + @c else N'' end + 
+                 case when ISNUMERIC(D1.Dimensie4) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie4,'.',''),0)),'x') + @c else N'' end +
+				 REPLICATE ( 'X' ,15 ),15)))), (case when SPGM.SalesPartGrpMainCode in (N'001',N'002',N'003',N'004',N'005',N'006',N'007',N'008',N'009',N'010',N'011',N'012',N'013',N'014',N'015',N'016',N'017',N'018',N'019',N'020',N'021',N'022',N'023',N'024',N'025',N'026',N'027',N'028',N'029',N'030',N'031') then CMF.[PosNr] else N'' end )
+
+
+OPEN Crs_TableRow
+ 
+ FETCH Crs_TableRow
+ INTO 
+  @PartCode
+, @ServiceNaam				  
+, @ServiceType 				  
+, @Hoofdgroep 				    
+, @Omschrijving 				    
+, @PosNr 						    
+, @Materiaal 					    
+, @Dikte 						    
+, @Aantal 					    
+, @S1 						    
+, @S2 						    
+, @S3 						    
+, @C1 						    
+, @C2 						    
+, @C3 						   
+, @C4 						    
+, @DimsA 						    
+, @DimsB 						    
+, @DimsC 						    
+, @DimsD 						    
+, @DimsE 						    
+, @DimsF 						    
+, @DimsG 						    
+, @DimsH 						    
+, @DimsI 						    
+, @DimsJ 						    
+, @DimsK 						    
+, @DimsL 						    
+, @DimsM 						    
+, @DimsN 						    
+, @DimsO 						    
+, @DimsP 						    
+, @DimsQ 						    
+, @DimsR 						    	
+, @LengteNetto 				    
+, @Gewicht 					    
+, @Oppervlakte 				    
+, @Isolatie 					    
+, @IsolatieMateriaalDikte 	    
+, @UitwendigeNabehandeling        
+, @InwendigeNabehandeling 	    
+, @RAL 					    
+, @RAL1 					    			    
+, @Reinheidsklasse 			    
+, @Luchtdichtheidsklasse 		    
+, @ExtraInfo 
+, @UnitCode
+WHILE @@FETCH_STATUS = 0
+BEGIN
+ 
+-------------------------------------------------------------------------------------------------------------------------------------
+----Insert ProdBillOfMat
+-------------------------------------------------------------------------------------------------------------------------------------
+
+  SET @PBOM_LineNr = (ISNULL((SELECT MAX(LineNr) FROM dbo.T_ProdBillOfMat WHERE ProdHeaderDossierCode = @ProdHeaderDossierCode), 0)) + 10
+  SET @RevisionNr = N'000'
+  SET @CurrDate   = getdate()  
+  SET @Fiat                  = 0
+  
+  SET @InvtQty               = 0
+  SET @PurQty                = 0
+  SET @ProdQty               = 0
+  SET @PurPriceOriginType    = 0
+  SET @CustPriceOriginType   = 0
+  SET @InvtPriceOriginType   = 0
+  SET @ProdPriceOriginType   = 0
+
+--Opties PurPriceOriginType
+--1 Calculatieprijs artikel
+--2 Inkoopprijs artikel
+--3 Vrij in te voeren prijs
+--4 Calculatieprijs productiedossier
+--select @ordCode = OrdCode from dbo.T_Part where PartCode = @PartCode
+--1 Inkopen op order, op maat
+--2 Inkopen op order, handelshoeveelheid
+
+ Set @OrdCode = 1
+
+ IF @OrdCode IN (1,2)
+ BEGIN
+  SELECT @PurQty = @Aantal, @InvtQty = 0, @ProdQty = 0, @PurPriceOriginType = 1
+ END
+
+----Opties InvtPriceOriginType
+----1 Calculatieprijs artikel
+----3 Vrij in te voeren prijs
+
+--3 Op voorraad
+ IF @OrdCode IN (3)
+ BEGIN
+  SELECT @PurQty =0, @InvtQty = @Aantal, @ProdQty = 0, @InvtPriceOriginType = 1
+ END
+
+--4 Toelevering door klant
+---------
+
+--6 In nieuw productiedossier produceren
+ IF @OrdCode IN (6)
+ BEGIN
+  SELECT @PurQty = 0, @InvtQty = 0, @ProdQty = @Aantal, @ProdPriceOriginType = 4
+ END
+
+--7 Calculatie inkopieren (phantom)
+ IF @OrdCode IN (7)
+ BEGIN
+  SELECT @PurQty = 0, @InvtQty = 0, @ProdQty = @Aantal,  @ProdPriceOriginType = 1
+ END
+
+ IF @OrdCode IN (3)
+ BEGIN
+  SELECT @OrdCode = 0
+ END
+
+ --SELECT @Length = (select case when isnumeric(replace(@LengteNetto,',','.')) = 1 then convert(numeric(12,3),replace(@LengteNetto,',','.'))/1000 else 0 end),
+ --       @Width = 0,
+	--	@Height = 0
+
+ IF @UnitCode = 1
+ BEGIN
+  SELECT @Length = 0, @Width = 0, @Height = 0
+ END
+
+ IF @UnitCode = 2
+  BEGIN
+   SELECT 
+    @Length = (select case when isnumeric(replace(@LengteNetto,',','.')) = 1 then convert(numeric(12,3),replace(@LengteNetto,',','.'))/1000 else 1 end),
+	@Width = 0, 
+	@Height = 0	  
+  END
+
+ IF @UnitCode = 3
+ BEGIN
+  SELECT 
+  @Length = (select case when isnumeric(replace(@LengteNetto,',','.')) = 1 then convert(numeric(12,3),replace(@LengteNetto,',','.'))/1000 else 1 end),
+  @Width = ISNULL(@Width,0),
+  @Height = 0
+ END
+
+ IF @UnitCode = 4
+ BEGIN
+  SELECT 
+  @Length = (select case when isnumeric(replace(@LengteNetto,',','.')) = 1 then convert(numeric(12,3),replace(@LengteNetto,',','.'))/1000 else 1 end),
+  @Width = ISNULL(@Width,0),
+  @Height = ISNULL(@Height,0)
+ END
+
+
+
+ -- 17-5-2022 RJvD Lengte gevuld door Oppervlakte ipv Lengte
+ -- 24-5-2022 RJvD Width standaard op 1 om m2 uit te kunnen rekenen.
+  SET @new_ProdBOMLineNr = Null
+  EXECUTE ip_ins_ProdBOM                                              
+  @IsahUserCode          = @IsahUserCode                
+ ,@ProdHeaderDossierCode = @ProdHeaderDossierCode
+ ,@ProdBOOLineNr         = 0
+ ,@LineNr                = @PBOM_LineNr           
+ ,@SubPartCode           = @PartCode                                
+ ,@Qty                   = @Aantal
+ ,@InvtQty               = @InvtQty
+ ,@PurQty                = @PurQty
+ ,@ProdQty               = @ProdQty
+ ,@Height                = @Height
+ ,@Length                = @Oppervlakte
+ ,@Width                 = 1
+ ,@JobPreparationFiatInd = @Fiat
+ ,@VendId                = N'' --@VendId
+ ,@Description           = N'' --@Description
+ ,@PartPos               = @PosNr
+ ,@PurPriceOriginType    = @PurPriceOriginType
+ ,@InvtPriceOriginType   = @InvtPriceOriginType
+ ,@CustPriceOriginType   = @CustPriceOriginType
+ ,@ProdPriceOriginType   = @ProdPriceOriginType
+ ,@OrdCode               = @OrdCode
+ ,@RequiredDate          = @RequiredDate 
+ ,@RevisionDate          = @CurrDate Output
+ ,@RevisionNr            = @RevisionNr Output 
+ ,@new_ProdBomLineNr     = @new_ProdBOMLineNr Output
+
+ select @IsahPrimKey = @ProdHeaderDossierCode + N'|' + convert(nvarchar(3),@new_ProdBOMLineNr)
+
+  ----insert
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode00, @S1)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode01, @S2)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode02, @S3)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode03, @C1)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode04, @C2)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode05, @C3)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode06, @C4)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode07, @DimsA)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode08, @DimsB)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode09, @DimsC)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode10, @DimsD)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode11, @DimsE)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode12, @DimsF)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode13, @DimsG)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode14, @DimsH)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode15, @DimsI)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode16, @DimsJ)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode17, @DimsK)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode18, @DimsL)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode19, @DimsM)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode20, @DimsN)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode21, @DimsO)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode22, @DimsP)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode23, @DimsQ)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode24, @DimsR)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode25, @LengteNetto)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode26, @Isolatie)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode27, @IsolatieMateriaalDikte)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode28, @UitwendigeNabehandeling)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode29, @InwendigeNabehandeling)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode30, @RAL)  
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode31, @RAL1)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode33, @Reinheidsklasse)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode34, @Luchtdichtheidsklasse)
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[AlphaNumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode35, @ExtraInfo) 
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[NumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode36, @Gewicht) 
+  INSERT INTO [dbo].[T_CustomFieldValue] ([IsahTableId], [IsahPrimKey],[FieldDefCode],[NumericValue])VALUES(@IsahTableId, @IsahPrimKey , @FieldDefCode37, @Oppervlakte) 
+   
+--   --update
+
+ FETCH Crs_TableRow
+ INTO 
+  @PartCode
+, @ServiceNaam				  
+, @ServiceType 				  
+, @Hoofdgroep 				    
+, @Omschrijving 				    
+, @PosNr 						    
+, @Materiaal 					    
+, @Dikte 						    
+, @Aantal 					    
+, @S1 						    
+, @S2 						    
+, @S3 						    
+, @C1 						    
+, @C2 						    
+, @C3 						   
+, @C4 						    
+, @DimsA 						    
+, @DimsB 						    
+, @DimsC 						    
+, @DimsD 						    
+, @DimsE 						    
+, @DimsF 						    
+, @DimsG 						    
+, @DimsH 						    
+, @DimsI 						    
+, @DimsJ 						    
+, @DimsK 						    
+, @DimsL 						    
+, @DimsM 						    
+, @DimsN 						    
+, @DimsO 						    
+, @DimsP 						    
+, @DimsQ 						    
+, @DimsR 						    	
+, @LengteNetto 				    
+, @Gewicht 					    
+, @Oppervlakte 				    
+, @Isolatie 					    
+, @IsolatieMateriaalDikte 	    
+, @UitwendigeNabehandeling        
+, @InwendigeNabehandeling 	    
+, @RAL 					    
+, @RAL1 					    		    
+, @Reinheidsklasse 			    
+, @Luchtdichtheidsklasse 		    
+, @ExtraInfo 	
+, @UnitCode
+END
+
+ CLOSE Crs_TableRow
+ DEALLOCATE Crs_TableRow
+
+ -------------------------------------------------------------------------------------------------------------------------------------
+----ophalen alle regels uit cadmep bestand
+-------------------------------------------------------------------------------------------------------------------------------------
+ CREATE TABLE #ALLPARTCODES
+(
+[PartCode]     nvarchar(100) null,
+[Omschrijving] nvarchar(100) null,
+[PartPos] nvarchar(100) null
+)
+
+CREATE TABLE #PARTCODEEXITS
+(
+[PartCode]     nvarchar(100) null,
+)
+
+insert into #ALLPARTCODES
+SELECT distinct
+ UPPER (
+		rtrim(ltrim(LEFT(
+		convert(nvarchar(25),FORMAT(convert(int,LEFT(CMF.[Hoofdgroep],3)),'x')) + MAT.IDString  +
+		case when ISNUMERIC(D1.Dimensie1) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie1,'.',''),0)),'x') + @c else N'' end + 
+		case when ISNUMERIC(D1.Dimensie2) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie2,'.',''),0)),'x') + @c else N'' end + 
+		case when ISNUMERIC(D1.Dimensie3) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie3,'.',''),0)),'x') + @c else N'' end + 
+        case when ISNUMERIC(D1.Dimensie4) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie4,'.',''),0)),'x') + @c else N'' end +	
+		REPLICATE ( '0' ,15 ),15))))
+,(isnull(CMF.[Omschrijving],N'')) 
+--,(isnull(CMF.[PosNr],N''))
+
+--,(case when CMF.[Hoofdgroep] = '030' then (isnull(CMF.[PosNr],N'')) else N'' end)
+, (case when (convert(nvarchar(25),CMF.[Hoofdgroep])) in ('030','031') then (isnull(CMF.[PosNr],N'')) else N'' end)
+
+FROM #CADMEPFILE as CMF
+inner join dbo.T_SalesPartGrpMain As SPGM ON SPGM.SalesPartGrpMainCode = right('000'+CMF.Hoofdgroep,3) 
+inner join #dimensions As D1 On D1.GUID = CMF.GUID
+left outer join dbo.ST_CPC_Material as MAT ON rtrim(MAT.Grades) = rtrim(CMF.Materiaal)
+UNION ALL
+--PartCode op basis gelijk aan DUMMY
+SELECT distinct
+ UPPER (
+		rtrim(ltrim(LEFT(
+		convert(nvarchar(25),FORMAT(convert(int,LEFT(CMF.[Hoofdgroep],3)),'x')) + MAT.IDString  +
+		case when ISNUMERIC(D1.Dimensie1) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie1,'.',''),0)),'x') + @c else N'' end + 
+		case when ISNUMERIC(D1.Dimensie2) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie2,'.',''),0)),'x') + @c else N'' end + 
+		case when ISNUMERIC(D1.Dimensie3) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie3,'.',''),0)),'x') + @c else N'' end + 
+        case when ISNUMERIC(D1.Dimensie4) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie4,'.',''),0)),'x') + @c else N'' end +	
+		REPLICATE ( 'X' ,15 ),15))))
+,(isnull(CMF.[Omschrijving],N'')) 
+,(isnull(CMF.[PosNr],N''))
+FROM #CADMEPFILE as CMF
+inner join dbo.T_SalesPartGrpMain As SPGM ON SPGM.SalesPartGrpMainCode = right('000'+CMF.Hoofdgroep,3) 
+inner join #dimensions As D1 On D1.GUID = CMF.GUID
+left outer join dbo.ST_CPC_Material as MAT ON rtrim(MAT.Grades) = rtrim(CMF.Materiaal)
+inner join dbo.T_Part As P ON P.PartCode =  UPPER (
+				 rtrim(ltrim(LEFT(
+				 convert(nvarchar(25),FORMAT(convert(int,LEFT(CMF.[Hoofdgroep],3)),'x')) + MAT.IDString +
+				 case when ISNUMERIC(D1.Dimensie1) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie1,'.',''),0)),'x') + @c else N'' end + 
+				 case when ISNUMERIC(D1.Dimensie2) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie2,'.',''),0)),'x') + @c else N'' end + 
+				 case when ISNUMERIC(D1.Dimensie3) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie3,'.',''),0)),'x') + @c else N'' end + 
+                 case when ISNUMERIC(D1.Dimensie4) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie4,'.',''),0)),'x') + @c else N'' end +
+				 REPLICATE ( 'X' ,15 ),15))))
+
+-------------------------------------------------------------------------------------------------------------------------------------
+----Bepalen welke artikelen bestaan in Isah
+-------------------------------------------------------------------------------------------------------------------------------------
+insert into #PARTCODEEXITS
+--PartCode op basis ongelijk aan DUMMY
+SELECT distinct
+ UPPER (
+		rtrim(ltrim(LEFT(
+		convert(nvarchar(25),FORMAT(convert(int,LEFT(CMF.[Hoofdgroep],3)),'x')) + MAT.IDString  +
+		case when ISNUMERIC(D1.Dimensie1) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie1,'.',''),0)),'x') + @c else N'' end + 
+		case when ISNUMERIC(D1.Dimensie2) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie2,'.',''),0)),'x') + @c else N'' end + 
+		case when ISNUMERIC(D1.Dimensie3) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie3,'.',''),0)),'x') + @c else N'' end + 
+        case when ISNUMERIC(D1.Dimensie4) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie4,'.',''),0)),'x') + @c else N'' end +	
+		REPLICATE ( '0' ,15 ),15))))
+FROM #CADMEPFILE as CMF
+inner join dbo.T_SalesPartGrpMain As SPGM ON SPGM.SalesPartGrpMainCode = right('000'+CMF.Hoofdgroep,3) 
+inner join #dimensions As D1 On D1.GUID = CMF.GUID
+left outer join dbo.ST_CPC_Material as MAT ON rtrim(MAT.Grades) = rtrim(CMF.Materiaal)
+inner join dbo.T_Part As P ON P.PartCode =  UPPER (
+				 rtrim(ltrim(LEFT(
+				 convert(nvarchar(25),FORMAT(convert(int,LEFT(CMF.[Hoofdgroep],3)),'x')) + MAT.IDString +
+				 case when ISNUMERIC(D1.Dimensie1) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie1,'.',''),0)),'x') + @c else N'' end + 
+				 case when ISNUMERIC(D1.Dimensie2) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie2,'.',''),0)),'x') + @c else N'' end + 
+				 case when ISNUMERIC(D1.Dimensie3) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie3,'.',''),0)),'x') + @c else N'' end + 
+                 case when ISNUMERIC(D1.Dimensie4) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie4,'.',''),0)),'x') + @c else N'' end +
+				 REPLICATE ( '0' ,15 ),15))))
+UNION ALL
+--PartCode op basis gelijk aan DUMMY
+SELECT distinct
+ UPPER (
+		rtrim(ltrim(LEFT(
+		convert(nvarchar(25),FORMAT(convert(int,LEFT(CMF.[Hoofdgroep],3)),'x')) + MAT.IDString  +
+		case when ISNUMERIC(D1.Dimensie1) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie1,'.',''),0)),'x') + @c else N'' end + 
+		case when ISNUMERIC(D1.Dimensie2) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie2,'.',''),0)),'x') + @c else N'' end + 
+		case when ISNUMERIC(D1.Dimensie3) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie3,'.',''),0)),'x') + @c else N'' end + 
+        case when ISNUMERIC(D1.Dimensie4) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie4,'.',''),0)),'x') + @c else N'' end +	
+		REPLICATE ( 'X' ,15 ),15))))
+FROM #CADMEPFILE as CMF
+inner join dbo.T_SalesPartGrpMain As SPGM ON SPGM.SalesPartGrpMainCode = right('000'+CMF.Hoofdgroep,3) 
+inner join #dimensions As D1 On D1.GUID = CMF.GUID
+left outer join dbo.ST_CPC_Material as MAT ON rtrim(MAT.Grades) = rtrim(CMF.Materiaal)
+inner join dbo.T_Part As P ON P.PartCode =  UPPER (
+				 rtrim(ltrim(LEFT(
+				 convert(nvarchar(25),FORMAT(convert(int,LEFT(CMF.[Hoofdgroep],3)),'x')) + MAT.IDString +
+				 case when ISNUMERIC(D1.Dimensie1) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie1,'.',''),0)),'x') + @c else N'' end + 
+				 case when ISNUMERIC(D1.Dimensie2) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie2,'.',''),0)),'x') + @c else N'' end + 
+				 case when ISNUMERIC(D1.Dimensie3) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie3,'.',''),0)),'x') + @c else N'' end + 
+                 case when ISNUMERIC(D1.Dimensie4) = 1 then FORMAT(convert(int,ISNULL(replace(D1.Dimensie4,'.',''),0)),'x') + @c else N'' end +
+				 REPLICATE ( 'X' ,15 ),15))))
+
+
+
+
+-------------------------------------------------------------------------------------------------------------------------------------
+---Vergelijken artikelen die niet bestaan in Isah
+-------------------------------------------------------------------------------------------------------------------------------------
+DECLARE Crs_TableRow CURSOR LOCAL FORWARD_ONLY DYNAMIC FOR
+select 
+t1.PartCode,
+t1.Omschrijving,
+t1.PartPos
+from #ALLPARTCODES as t1
+left outer join #PARTCODEEXITS as t2 on t2.PartCode = t1.partcode
+where isnull(t2.PartCode,N'') = N''
+
+OPEN Crs_TableRow
+ 
+ FETCH Crs_TableRow
+ INTO 
+  @PartCode,
+  @Omschrijving,
+  @PosNr
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+
+if (select count(@@rowcount) from dbo.ST_CADMEPFILE_Error where ProdHeaderDossierCode =@ProdHeaderDossierCode and PartCode = @PartCode) = 0
+begin
+
+  select 
+   @LineNrErr = IsNull(Max(t1.LineNr),0)+1,
+   @Reason = N'Het artikelnummer is niet bekend in Isah',                 
+   @ReasonId = 2
+  from dbo.ST_CADMEPFILE_Error as t1
+  where t1.ProdHeaderDossierCode = @ProdHeaderDossierCode
+
+ EXECUTE [dbo].[SIP_ins_CadMepFile_error] 
+   @ProdHeaderDossierCode = @ProdHeaderDossierCode
+  ,@LineNr                = @LineNrErr
+  ,@ItemNo                = @PosNr
+  ,@PartCode              = @PartCode
+  ,@Reason                = @Reason
+  ,@ReasonId              = @ReasonId
+  ,@LogProgramCode		  = 0
+  ,@IsahUserCode          = @IsahUserCode
+end
+
+ FETCH Crs_TableRow
+ INTO 
+  @PartCode,
+  @Omschrijving,
+  @PosNr
+
+END
+
+ CLOSE Crs_TableRow
+ DEALLOCATE Crs_TableRow
+
+
+ drop table #ALLPARTCODES
+ drop table #PARTCODEEXITS
+ drop table #CADMEPFILE
+ drop table #dimensions
+
+
+-----------------------------------------------------------------------------------------------------------------------------------
+--Verwijderen fase calculatie
+-----------------------------------------------------------------------------------------------------------------------------------
+ EXECUTE [dbo].[SIP_prc_del_PBOM_CALC] 
+   @ProdHeaderDossierCode =@ProdHeaderDossierCode
+  ,@IsahUserCode = @IsahUserCode
+
+
+END
+
+
