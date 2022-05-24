@@ -1,0 +1,46 @@
+USE [VinkSystemen_TEST]
+GO
+
+declare @PartCode [dbo].[T_Code_Part],
+@new_PartCode [dbo].[T_Code_Part]
+
+declare @LastUpdatedOn nvarchar(3999)
+set @LastUpdatedOn =N'May 24 2022 12:12:41:357PM'
+declare @InitLogDate datetime2(7)
+set @InitLogDate=NULL
+
+DECLARE db_cursor CURSOR FOR 
+select 
+PartCode
+
+from dbo.T_Part
+where isnull(PartCode,N'') != N''
+--and partcode = N'12DZXXXXXXXXXXX'
+--and SalesPartGrpCode = N'030A'
+and Description like 'RE %' 
+and PartMnem = 'DUMMY_PROD'
+
+OPEN db_cursor
+FETCH NEXT FROM db_cursor INTO 
+@PartCode
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+set @new_PartCode = REPLACE(@PartCode, 'x', '0'); 
+IF EXISTS (SELECT partcode FROM T_Part WHERE PartCode = @new_PartCode)
+	BEGIN
+		FETCH NEXT FROM db_cursor INTO 
+		@PartCode
+	END
+
+ELSE
+	BEGIN
+		
+		exec [dbo].[IP_prc_PartCode] @PartCode,9730000,N'ROBERTJAND',NULL,@new_PartCode output,@LastUpdatedOn output,@InitLogDate output
+		FETCH NEXT FROM db_cursor INTO 
+		@PartCode
+	END
+END
+ 
+CLOSE db_cursor
+DEALLOCATE db_cursor 
