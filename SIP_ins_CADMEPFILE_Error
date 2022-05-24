@@ -1,0 +1,147 @@
+USE [VinkSystemen_TEST]
+GO
+/****** Object:  StoredProcedure [dbo].[SIP_ins_CADMEPFILE_Error]    Script Date: 24-5-2022 14:47:11 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER OFF
+GO
+ALTER PROCEDURE [dbo].[SIP_ins_CADMEPFILE_Error]
+  ( @ProdHeaderDossierCode           [dbo].[T_Code_ProdHeadDossier]          = NULL
+  , @LineNr                          [int]                                   = NULL
+  , @ItemNo                          [nvarchar](5)                           = NULL
+  , @PartCode                        [nvarchar](30)                          = NULL
+  , @Reason                          [nvarchar](150)                         = NULL
+  , @ReasonId                        [int]                                   = NULL
+  , @LogProgramCode                  [dbo].[T_Code_Program]                  = 0
+  , @LastUpdatedOn                   [nvarchar](30)                          = NULL  OUTPUT
+  , @IsahUserCode                    [dbo].[T_Code_User]                     = NULL
+  )
+AS
+BEGIN
+    SET NOCOUNT ON;
+ 
+    -- variables for errorhandling
+    DECLARE @err             int
+    ,       @proc            nvarchar(30)
+    ,       @ret             int
+    ,       @LogParamValues  nvarchar(255)
+    ,       @LogMessType     tinyint;
+ 
+    SET @proc = [dbo].[IF_ObjectName](@@PROCID);
+    SET @LogMessType = 4;
+ 
+    -- check valid IsahUserCode
+    EXECUTE @ret = [dbo].[IP_chk_IsahUserCode] @IsahUserCode = @IsahUserCode, @LogProgramCode = @LogProgramCode;
+    IF @ret != 0
+    BEGIN
+        RETURN @ret;
+    END;
+ 
+    SELECT @LastUpdatedOn = CONVERT(nvarchar(30), GETDATE(), 109);
+ 
+    -- check on required inputvariable : @ProdHeaderDossierCode
+    IF @ProdHeaderDossierCode IS NULL
+    BEGIN
+        SET @LogParamValues = N'ST_CADMEPFILE_Error|ProdHeaderDossierCode';
+ 
+        EXECUTE @ret = [dbo].[IP_gen_Log] @CallerDesc     = @Proc
+                                        , @IsahUserCode   = @IsahUserCode
+                                        , @MessCode       = 20002
+                                        , @LogProgramCode = @LogProgramCode
+                                        , @LogParamValues = @LogParamValues
+                                        , @LogMessType    = @LogMessType;
+        RETURN @ret;
+    END;
+ 
+    -- check on required inputvariable : @LineNr
+    IF @LineNr IS NULL
+    BEGIN
+        SET @LogParamValues = N'ST_CADMEPFILE_Error|LineNr';
+ 
+        EXECUTE @ret = [dbo].[IP_gen_Log] @CallerDesc     = @Proc
+                                        , @IsahUserCode   = @IsahUserCode
+                                        , @MessCode       = 20002
+                                        , @LogProgramCode = @LogProgramCode
+                                        , @LogParamValues = @LogParamValues
+                                        , @LogMessType    = @LogMessType;
+        RETURN @ret;
+    END;
+ 
+     -- A new primary key value with only spaces or tabs is not allowed.
+     IF LEN(REPLACE(@ProdHeaderDossierCode, CHAR(9), ' ')) = 0
+     BEGIN
+         SET @LogParamValues = N'ST_CADMEPFILE_Error|ProdHeaderDossierCode' + @ProdHeaderDossierCode;
+ 
+         EXECUTE @ret = dbo.IP_gen_Log @CallerDesc     = @Proc
+                                     , @IsahUserCode   = @IsahUserCode
+                                     , @LogMessType    = @LogMessType
+                                     , @MessCode       = 20008
+                                     , @LogProgramCode = @LogProgramCode
+                                     , @LogParamValues = @LogParamValues;
+         RETURN @ret;
+    END;
+ 
+    -- The new primary key value must not exist
+    IF EXISTS ( SELECT 1
+                FROM   [dbo].[ST_CADMEPFILE_Error]
+                WHERE  [dbo].[ST_CADMEPFILE_Error].[ProdHeaderDossierCode] = @ProdHeaderDossierCode
+                AND    [dbo].[ST_CADMEPFILE_Error].[LineNr] = @LineNr
+              )
+    BEGIN
+        SET @LogParamValues = N'ProdHeaderDossierCode = ' + CAST(@ProdHeaderDossierCode AS nvarchar(30))
+                            + N';LineNr = ' + CAST(@LineNr AS nvarchar(30))
+                            + N'|ST_CADMEPFILE_Error';
+ 
+        EXECUTE @ret = dbo.IP_gen_Log @CallerDesc     = @Proc
+                                    , @IsahUserCode   = @IsahUserCode
+                                    , @MessCode       = 20003
+                                    , @LogProgramCode = @LogProgramCode
+                                    , @LogParamValues = @LogParamValues
+                                    , @LogMessType    = @LogMessType;
+        RETURN @ret;
+    END;
+ 
+    BEGIN TRANSACTION;
+ 
+    INSERT INTO [dbo].[ST_CADMEPFILE_Error]
+      ( ProdHeaderDossierCode
+      , LineNr
+      , ItemNo
+      , PartCode
+      , Reason
+      , ReasonId
+      , LastUpdatedOn
+      , LastUpdatedBy
+      )
+    VALUES
+      ( @ProdHeaderDossierCode
+      , @LineNr
+      , @ItemNo
+      , @PartCode
+      , @Reason
+      , @ReasonId
+      , @LastUpdatedOn
+      , @IsahUserCode
+      );
+ 
+    SELECT @err = @@Error;
+    IF @err != 0
+    BEGIN
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+ 
+        SET @LogParamValues = N'ST_CADMEPFILE_Error';
+ 
+        EXECUTE @ret = dbo.IP_gen_Log @CallerDesc     = @Proc
+                                    , @IsahUserCode   = @IsahUserCode
+                                    , @LogMessType    = @LogMessType
+                                    , @MessCode       = 20004
+                                    , @LogProgramCode = @LogProgramCode
+                                    , @LogParamValues = @LogParamValues
+                                    , @SybaseError    = @err;
+        RETURN @ret;
+    END;
+ 
+    IF @@TRANCOUNT > 0 COMMIT TRANSACTION;
+ 
+    RETURN 0;
+END;
