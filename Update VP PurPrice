@@ -1,0 +1,145 @@
+USE [VinkProducts_Test]
+GO
+ 
+declare @PartCode [dbo].[T_Code_Part],
+		@VendId [dbo].[T_Code_VendId],
+		@Unit [dbo].[T_Unit],
+		@PackUnit [dbo].[T_Unit],
+		@PurUnit [dbo].[T_Unit],
+		@SalesUnit [dbo].[T_Unit],
+		@UnitCode [dbo].[T_Code_Unit],
+		@PurUnitCode [dbo].[T_Code_Unit],
+		@PurUnitOfAccount [dbo].[T_UnitOfAccount_Pur],
+		@SalesUnitCode [dbo].[T_Code_Unit],
+		@SalesUnitOfAccount [dbo].[T_UnitOfAccount_Sales],
+		@OrdQty [dbo].[T_Quantum_Qty10_3],
+		@PackQty [dbo].[T_Quantum_Qty10_3],
+		@SalesQty [dbo].[T_Quantum_Qty10_3],
+		@TradeQty [dbo].[T_Quantum_Qty10_3],
+		@IsahUserCode [dbo].[T_Code_User],
+		@CurrPurPrice [dbo].[T_Fin_Price],
+		@LastUpdatedOn nvarchar(30),
+		@PurPartGrpCode [dbo].[T_Code_PartGrp],
+		@CalcPrice [dbo].[T_Fin_Price],
+		@currsalesprice [dbo].[T_Fin_Price],
+		--@CurrPurPrice [dbo].[T_Fin_Price],
+		@PartMnem [dbo].[T_MnemonicLong]
+
+		
+
+
+ 
+select @IsahUserCode = N'ROBERTJAND'
+--set @partcode = '101AXXXXXXXXXXX' 
+--set @VendId = '50001'
+DECLARE Crs_TableRow CURSOR LOCAL FORWARD_ONLY DYNAMIC FOR
+select 
+PartCode
+,CurrPurPrice
+,PackQty
+--,VendId
+--,Unit 
+--,PurUnit 
+--,PackUnit
+--,unitcode
+--,SalesUnitCode
+--,PurUnitCode
+--,PurUnitOfAccount
+--,TradeQty
+--,PackQty
+--,CurrPurPrice
+--,PurPartGrpCode
+--,SalesUnit
+--,SalesQty
+--,PartMnem
+,convert(nvarchar(30),lastupdatedon,109)
+
+from dbo.T_Part
+where isnull(PartCode,N'') != N''
+--and partcode = 'PLAALU15'
+--and SalesPartGrpCode = N'030A'
+--and Description like 'RE %' 
+and PartGrpCode in ('OVER','PLA','PLAF','PLAL','PLBL','PLCO','PLGL',
+'PLR4','PLR6','POAL','POBL','POCO','POGG','POGL','POPG','POR4',
+'POR6','STA4','STAB','STB4','STBA','STBB','STEB','STH4','STH6',
+'STHA','STHB','STHZ','STIB','STK4','STKA','STKB','STS4','STS6',
+'STSA','STSB','STUB','STUZ')
+ 
+OPEN Crs_TableRow
+FETCH Crs_TableRow
+INTO 
+@PartCode
+--,@VendId
+--,@Unit 
+--,@PurUnit 
+--,@PackUnit
+--,@unitcode
+--,@SalesUnitCode
+--,@PurUnitCode
+--,@PurUnitOfAccount
+--,@TradeQty
+,@CurrPurPrice
+,@PackQty
+--,@CurrPurPrice
+--,@PurPartGrpCode
+--,@SalesUnit
+--,@SalesQty
+--,@PartMnem
+,@lastupdatedOn
+
+
+ 
+WHILE @@FETCH_STATUS = 0
+BEGIN
+set @CalcPrice =  @CurrPurPrice * @PackQty
+set @currsalesprice =  @currpurprice * @PackQty
+exec IP_upd_Part
+@old_PartCode = @PartCode
+--,@vendid = '50001'
+--,@Unit = 'm²'
+--,@PurUnit = 'm²'
+--,@PackUnit = 'm²'
+--,@unitcode = 3
+--,@SalesUnitCode =3
+--,@PurUnitCode = 3
+--,@PurUnitOfAccount = 4
+--,@TradeQty = 1
+--,@PackQty = 1
+--,@CurrPurPrice = 40.05
+--,@PurPartGrpCode = 'P15'
+--,@SalesUnit = 'm²'
+--,@SalesQty = 1
+--,@PartMnem = 'DUMMY'
+,@CalcPrice =  @CalcPrice
+,@currsalesprice =  @currsalesprice
+,@old_lastupdatedOn = @lastupdatedOn
+,@IsahUserCode = @IsahUserCode
+ 
+ 
+FETCH Crs_TableRow
+INTO 
+@PartCode
+--,@VendId
+--,@Unit 
+--,@PurUnit 
+--,@PackUnit
+--,@unitcode
+--,@SalesUnitCode
+--,@PurUnitCode
+--,@PurUnitOfAccount
+--,@TradeQty
+--,@PackQty
+--,@CurrPurPrice
+--,@PurPartGrpCode
+--,@SalesUnit
+--,@SalesQty
+--,@PartMnem
+,@CurrPurPrice
+,@PackQty
+,@lastupdatedOn
+ 
+ 
+END
+ 
+CLOSE Crs_TableRow
+DEALLOCATE Crs_TableRow 
